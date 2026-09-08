@@ -21,6 +21,12 @@ export function getProjectByName(name: string) {
   });
 }
 
+export function getProjectById(id: string) {
+  return db.query.projects.findFirst({
+    where: eq(projects.id, id),
+  });
+}
+
 export async function listProjectsWithHours() {
   const rows = await db
     .select({

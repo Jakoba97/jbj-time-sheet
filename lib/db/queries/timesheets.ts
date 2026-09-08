@@ -132,6 +132,65 @@ export async function listWeeklyHoursTrend(weeksCount: number) {
   return rows.map((r) => ({ ...r, hours: Number(r.hours) })).reverse();
 }
 
+export type LaborReportDay = { date: string; hours: number; notes: string | null };
+export type LaborReportEmployee = {
+  userId: string;
+  fullName: string;
+  title: string | null;
+  days: LaborReportDay[];
+};
+
+/** One entry per employee who logged hours against `projectId` within [monthStartISO, monthEndISO],
+ * each with one row per date worked (multiple same-day entries summed, notes joined). */
+export async function listLaborReportData(
+  projectId: string,
+  monthStartISO: string,
+  monthEndISO: string,
+): Promise<LaborReportEmployee[]> {
+  const rows = await db
+    .select({
+      userId: users.id,
+      fullName: users.fullName,
+      title: users.title,
+      entryDate: timeEntries.entryDate,
+      hours: timeEntries.hours,
+      notes: timeEntries.notes,
+    })
+    .from(timeEntries)
+    .innerJoin(weeklyTimesheets, eq(weeklyTimesheets.id, timeEntries.weeklyTimesheetId))
+    .innerJoin(users, eq(users.id, weeklyTimesheets.userId))
+    .where(
+      and(
+        eq(timeEntries.projectId, projectId),
+        gte(timeEntries.entryDate, monthStartISO),
+        lte(timeEntries.entryDate, monthEndISO),
+      ),
+    )
+    .orderBy(users.fullName, timeEntries.entryDate);
+
+  const byUser = new Map<string, LaborReportEmployee>();
+  for (const r of rows) {
+    let employee = byUser.get(r.userId);
+    if (!employee) {
+      employee = { userId: r.userId, fullName: r.fullName, title: r.title, days: [] };
+      byUser.set(r.userId, employee);
+    }
+
+    const hours = Number(r.hours);
+    const existingDay = employee.days.find((d) => d.date === r.entryDate);
+    if (existingDay) {
+      existingDay.hours += hours;
+      if (r.notes) {
+        existingDay.notes = existingDay.notes ? `${existingDay.notes}; ${r.notes}` : r.notes;
+      }
+    } else {
+      employee.days.push({ date: r.entryDate, hours, notes: r.notes });
+    }
+  }
+
+  return Array.from(byUser.values());
+}
+
 export async function listAllTimesheetsWithUser(filters?: {
   userId?: string;
   from?: string;
