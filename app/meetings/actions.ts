@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireAdmin, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db/client";
 import { meetingAttendees, meetingMinutes } from "@/lib/db/schema";
 
@@ -19,7 +19,7 @@ export async function createMeetingAction(
   _prevState: { error: string | null },
   formData: FormData,
 ): Promise<{ error: string | null }> {
-  const session = await requireAdmin();
+  const session = await requireUser();
 
   const parsed = createMeetingSchema.safeParse({
     meetingDate: formData.get("meetingDate"),
@@ -59,12 +59,12 @@ export async function createMeetingAction(
     }
   });
 
-  revalidatePath("/admin/meetings");
+  revalidatePath("/meetings");
   return { error: null };
 }
 
 export async function deleteMeetingAction(meetingId: string) {
   await requireAdmin();
   await db.delete(meetingMinutes).where(eq(meetingMinutes.id, meetingId));
-  revalidatePath("/admin/meetings");
+  revalidatePath("/meetings");
 }

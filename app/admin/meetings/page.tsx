@@ -1,34 +1,7 @@
-import { AppShell } from "@/components/layout/AppShell";
-import { AddMeetingForm } from "@/components/admin/AddMeetingForm";
-import { MeetingRow } from "@/components/admin/MeetingRow";
-import { listUsers } from "@/lib/db/queries/users";
-import { listMeetingsWithAttendees } from "@/lib/db/queries/meetings";
+import { redirect } from "next/navigation";
 
-export default async function AdminMeetingsPage() {
-  const [users, meetings] = await Promise.all([listUsers(), listMeetingsWithAttendees()]);
-
-  return (
-    <AppShell>
-      <h1 className="mb-4 text-2xl font-bold text-brand-gray">Meeting Minutes</h1>
-      <div className="mb-6">
-        <AddMeetingForm users={users.map((u) => ({ id: u.id, fullName: u.fullName }))} />
-      </div>
-      <div className="flex flex-col gap-3">
-        {meetings.length === 0 ? (
-          <p className="text-brand-gray">No meetings recorded yet.</p>
-        ) : (
-          meetings.map((m) => (
-            <MeetingRow
-              key={m.id}
-              id={m.id}
-              meetingDate={m.meetingDate}
-              durationMinutes={m.durationMinutes}
-              notes={m.notes}
-              attendeeNames={m.attendeeNames}
-            />
-          ))
-        )}
-      </div>
-    </AppShell>
-  );
+// Meeting minutes moved from admin-only to /meetings (open to all signed-in users). This keeps
+// old bookmarks/links working.
+export default function AdminMeetingsRedirect() {
+  redirect("/meetings");
 }

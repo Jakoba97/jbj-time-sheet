@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteMeetingAction } from "@/app/admin/meetings/actions";
+import { deleteMeetingAction } from "@/app/meetings/actions";
 
 export function MeetingRow({
   id,
@@ -9,12 +9,14 @@ export function MeetingRow({
   durationMinutes,
   notes,
   attendeeNames,
+  canDelete,
 }: {
   id: string;
   meetingDate: string;
   durationMinutes: number;
   notes: string;
   attendeeNames: string[];
+  canDelete: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -31,14 +33,16 @@ export function MeetingRow({
           </span>{" "}
           <span className="text-base text-brand-gray">({durationMinutes} min)</span>
         </div>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => startTransition(() => deleteMeetingAction(id))}
-          className="h-9 rounded-md border-2 border-brand-red px-3 text-sm font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white disabled:opacity-60"
-        >
-          Delete
-        </button>
+        {canDelete && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => startTransition(() => deleteMeetingAction(id))}
+            className="h-9 rounded-md border-2 border-brand-red px-3 text-sm font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white disabled:opacity-60"
+          >
+            Delete
+          </button>
+        )}
       </div>
       <p className="text-base text-brand-gray">
         <span className="font-medium">Attendees:</span> {attendeeNames.join(", ")}

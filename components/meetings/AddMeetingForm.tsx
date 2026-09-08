@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createMeetingAction } from "@/app/admin/meetings/actions";
+import { createMeetingAction } from "@/app/meetings/actions";
 
 type KnownUser = { id: string; fullName: string };
 
@@ -39,7 +39,7 @@ export function AddMeetingForm({ users }: { users: KnownUser[] }) {
             min={1}
             max={1440}
             required
-            defaultValue={30}
+            defaultValue={60}
             className="h-12 w-32 rounded-md border border-brand-rose/50 px-3 text-lg"
           />
         </div>

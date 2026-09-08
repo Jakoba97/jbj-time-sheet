@@ -7,10 +7,8 @@ import { MoreMenu } from "@/components/layout/MoreMenu";
 const ADMIN_MORE_ITEMS = [
   { href: "/admin/employees", label: "Employees" },
   { href: "/admin/projects", label: "Projects" },
-  { href: "/admin/holidays", label: "Holidays" },
   { href: "/admin/import", label: "Import" },
   { href: "/admin/export", label: "Export" },
-  { href: "/admin/meetings", label: "Meetings" },
   { href: "/admin/audit", label: "Audit Log" },
 ];
 
@@ -33,6 +31,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
               <Link href="/timesheets" className="hover:underline">
                 Past Timesheets
               </Link>
+              <Link href="/meetings" className="hover:underline">
+                Meetings
+              </Link>
             </nav>
           )}
           {user?.role === "admin" && (
@@ -42,6 +43,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
               </Link>
               <Link href="/admin/timesheets" className="hover:underline">
                 Timesheets
+              </Link>
+              <Link href="/meetings" className="hover:underline">
+                Meetings
               </Link>
               <MoreMenu items={ADMIN_MORE_ITEMS} />
             </nav>
