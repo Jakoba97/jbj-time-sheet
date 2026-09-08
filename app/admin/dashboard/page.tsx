@@ -1,14 +1,9 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { HoursByEmployeeChart } from "@/components/admin/dashboard/HoursByEmployeeChart";
 import { HoursByProjectChart } from "@/components/admin/dashboard/HoursByProjectChart";
-import { WeeklyTrendChart } from "@/components/admin/dashboard/WeeklyTrendChart";
-import {
-  listHoursByEmployeeForWeek,
-  listWeeklyHoursTrend,
-} from "@/lib/db/queries/timesheets";
+import { listHoursByEmployeeForWeek } from "@/lib/db/queries/timesheets";
 import { listProjectsWithHours } from "@/lib/db/queries/projects";
-import { countPendingPtoRequests } from "@/lib/db/queries/pto";
-import { formatDateISO, getWeekStart } from "@/lib/utils/week";
+import { addDays, formatDateISO, getWeekStart } from "@/lib/utils/week";
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -21,16 +16,16 @@ function StatTile({ label, value }: { label: string; value: string | number }) {
 
 export default async function AdminDashboardPage() {
   const weekStartISO = formatDateISO(getWeekStart());
+  const lastWeekStartISO = formatDateISO(addDays(getWeekStart(), -7));
 
-  const [employeeHours, projects, weeklyTrend, pendingPto] = await Promise.all([
+  const [employeeHours, lastWeekHours, projects] = await Promise.all([
     listHoursByEmployeeForWeek(weekStartISO),
+    listHoursByEmployeeForWeek(lastWeekStartISO),
     listProjectsWithHours(),
-    listWeeklyHoursTrend(8),
-    countPendingPtoRequests(),
   ]);
 
   const totalHoursThisWeek = employeeHours.reduce((sum, e) => sum + e.hours, 0);
-  const overtimeCount = employeeHours.filter((e) => e.hours > 40).length;
+  const totalHoursLastWeek = lastWeekHours.reduce((sum, e) => sum + e.hours, 0);
   const activeEmployeeCount = employeeHours.filter((e) => e.hours > 0).length;
 
   return (
@@ -43,8 +38,7 @@ export default async function AdminDashboardPage() {
           value={`${activeEmployeeCount} / ${employeeHours.length}`}
         />
         <StatTile label="Total Hours This Week" value={totalHoursThisWeek.toFixed(1)} />
-        <StatTile label="Employees Over 40 hrs" value={overtimeCount} />
-        <StatTile label="Pending PTO Requests" value={pendingPto} />
+        <StatTile label="Total Hours Last Week" value={totalHoursLastWeek.toFixed(1)} />
       </div>
 
       <div className="mb-6 rounded-md border border-brand-rose/40 p-4">
@@ -55,11 +49,6 @@ export default async function AdminDashboardPage() {
       <div className="mb-6 rounded-md border border-brand-rose/40 p-4">
         <h2 className="mb-3 text-xl font-bold text-brand-gray">Hours by Project (All Time)</h2>
         <HoursByProjectChart data={projects} />
-      </div>
-
-      <div className="rounded-md border border-brand-rose/40 p-4">
-        <h2 className="mb-3 text-xl font-bold text-brand-gray">Weekly Trend (Last 8 Weeks)</h2>
-        <WeeklyTrendChart data={weeklyTrend} />
       </div>
     </AppShell>
   );
