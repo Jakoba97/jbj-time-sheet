@@ -36,6 +36,17 @@ export function AddEmployeeForm() {
           />
         </div>
         <div className="flex flex-col gap-1">
+          <label className="text-base font-medium text-brand-gray" htmlFor="title">
+            Title
+          </label>
+          <input
+            id="title"
+            name="title"
+            placeholder="e.g. Project Manager"
+            className="h-12 w-48 rounded-md border border-brand-rose/50 px-3 text-lg focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/30"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
           <label className="text-base font-medium text-brand-gray" htmlFor="role">
             Role
           </label>

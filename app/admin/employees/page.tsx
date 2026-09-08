@@ -18,6 +18,7 @@ export default async function AdminEmployeesPage() {
             key={u.id}
             id={u.id}
             fullName={u.fullName}
+            title={u.title}
             username={u.username}
             role={u.role}
             active={u.active}
