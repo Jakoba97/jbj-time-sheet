@@ -1,4 +1,14 @@
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const DAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+export type WeekDate = { date: string; label: string; isWeekend: boolean };
 
 function toDateOnly(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -31,12 +41,22 @@ export function addDays(date: Date, days: number): Date {
   return d;
 }
 
-/** Returns the 5 Mon-Fri dates (as ISO strings) for the week starting `weekStart`. */
-export function getWeekDates(weekStart: Date): { date: string; label: string }[] {
+/** Returns all 7 Mon-Sun dates (as ISO strings) for the week starting `weekStart`. */
+export function getWeekDates(weekStart: Date): WeekDate[] {
   return DAY_NAMES.map((label, i) => ({
     date: formatDateISO(addDays(weekStart, i)),
     label,
+    isWeekend: i >= 5,
   }));
+}
+
+/** Weekdays always show; Saturday/Sunday only show if the employee logged an entry that day. */
+export function visibleWeekDates<T extends WeekDate>(
+  weekDates: T[],
+  entries: { entryDate: string }[],
+): T[] {
+  const datesWithEntries = new Set(entries.map((e) => e.entryDate));
+  return weekDates.filter((wd) => !wd.isWeekend || datesWithEntries.has(wd.date));
 }
 
 export function formatWeekRange(weekStartISO: string, weekEndISO: string): string {

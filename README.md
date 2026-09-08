@@ -1,8 +1,8 @@
 # JBJ Time Sheet
 
 Internal time tracking app for JBJ: employees log hours against projects, admins
-manage employees/projects/PTO/meetings and export timesheets as PDF, Excel, and
-CSV. Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, Drizzle ORM,
+manage employees/projects/PTO/meetings and export timesheets as PDF and Excel.
+Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, Drizzle ORM,
 and Neon Postgres. Hosted on Vercel.
 
 ## Live app

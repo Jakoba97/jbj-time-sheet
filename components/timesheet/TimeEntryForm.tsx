@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ACTIVITY_TYPES } from "@/lib/constants/activityTypes";
+import { SELECTABLE_ACTIVITY_TYPES } from "@/lib/constants/activityTypes";
 import { hoursBetween, isValidHHMM } from "@/lib/utils/time";
+import type { WeekDate } from "@/lib/utils/week";
 
 export type TimeEntryRecord = {
   id: string;
@@ -25,7 +26,6 @@ export type TimeEntryFormValues = {
 };
 
 type Project = { id: string; name: string };
-type WeekDate = { date: string; label: string };
 
 const DEFAULT_START_TIME = "09:00";
 
@@ -57,7 +57,7 @@ export function TimeEntryForm({
   projects: Project[];
   weekDates: WeekDate[];
   existingEntries: TimeEntryRecord[];
-  mode: "create" | "edit" | "duplicate";
+  mode: "create" | "edit";
   initialValues: TimeEntryFormValues | null;
   pending: boolean;
   onSubmit: (values: TimeEntryFormValues) => void;
@@ -131,7 +131,9 @@ export function TimeEntryForm({
               className={`h-12 rounded-md border-2 px-4 text-lg font-semibold transition-colors ${
                 values.entryDate === wd.date
                   ? "border-brand-red bg-brand-red text-brand-white"
-                  : "border-brand-rose/50 text-brand-gray hover:border-brand-red"
+                  : wd.isWeekend
+                    ? "border-dashed border-brand-rose/40 text-brand-gray/60 hover:border-brand-red"
+                    : "border-brand-rose/50 text-brand-gray hover:border-brand-red"
               }`}
             >
               {wd.label}
@@ -166,6 +168,7 @@ export function TimeEntryForm({
           <input
             id="startTime"
             type="time"
+            step={300}
             value={values.startTime}
             onChange={(e) => {
               setStartTouched(true);
@@ -181,6 +184,7 @@ export function TimeEntryForm({
           <input
             id="endTime"
             type="time"
+            step={300}
             value={values.endTime}
             onChange={(e) => setValues((v) => ({ ...v, endTime: e.target.value }))}
             className="h-12 rounded-md border border-brand-rose/50 px-3 text-lg"
@@ -196,7 +200,7 @@ export function TimeEntryForm({
       <div className="flex flex-col gap-1">
         <span className="text-base font-medium text-brand-gray">What kind of activity?</span>
         <div className="flex flex-wrap gap-2">
-          {ACTIVITY_TYPES.map((t) => (
+          {SELECTABLE_ACTIVITY_TYPES.map((t) => (
             <button
               key={t.value}
               type="button"

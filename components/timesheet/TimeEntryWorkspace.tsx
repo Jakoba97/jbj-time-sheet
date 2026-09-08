@@ -10,9 +10,9 @@ import {
   deleteTimeEntryAction,
   updateTimeEntryAction,
 } from "@/app/timesheet-actions";
+import { visibleWeekDates, type WeekDate } from "@/lib/utils/week";
 
 type Project = { id: string; name: string };
-type WeekDate = { date: string; label: string };
 
 export function TimeEntryWorkspace({
   timesheetId,
@@ -28,10 +28,11 @@ export function TimeEntryWorkspace({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [formState, setFormState] = useState<{
-    mode: "create" | "edit" | "duplicate";
+    mode: "create" | "edit";
     initialValues: TimeEntryFormValues | null;
     editingId: string | null;
   }>({ mode: "create", initialValues: null, editingId: null });
@@ -58,20 +59,29 @@ export function TimeEntryWorkspace({
     });
   }
 
-  function handleDuplicate(entry: TimeEntryRecord) {
+  function handleDuplicate(entry: TimeEntryRecord, targetDate: string) {
+    if (!entry.startTime || !entry.endTime) {
+      setError("This entry has no time-of-day to copy, so it can't be duplicated.");
+      return;
+    }
     setError(null);
-    setFormKey((k) => k + 1);
-    setFormState({
-      mode: "duplicate",
-      editingId: null,
-      initialValues: {
+    setDuplicatingId(entry.id);
+    startTransition(async () => {
+      const result = await createTimeEntryAction({
+        timesheetId,
         projectId: entry.projectId,
-        entryDate: entry.entryDate,
-        startTime: "",
-        endTime: "",
+        entryDate: targetDate,
+        startTime: entry.startTime!,
+        endTime: entry.endTime!,
         activityType: entry.activityType ?? "project_work",
         notes: entry.notes ?? "",
-      },
+      });
+      setDuplicatingId(null);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
     });
   }
 
@@ -107,34 +117,42 @@ export function TimeEntryWorkspace({
     });
   }
 
+  const shownWeekDates = visibleWeekDates(weekDates, initialEntries);
+
   return (
-    <div className="flex flex-col gap-6">
-      <TimeEntryForm
-        key={formKey}
-        projects={projects}
-        weekDates={weekDates}
-        existingEntries={initialEntries}
-        mode={formState.mode === "duplicate" ? "create" : formState.mode}
-        initialValues={formState.initialValues}
-        pending={pending}
-        onSubmit={handleSubmit}
-        onCancel={resetForm}
-      />
-      {error && <p className="text-base font-medium text-brand-red">{error}</p>}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="flex min-w-0 flex-col gap-3">
+        <TimeEntryForm
+          key={formKey}
+          projects={projects}
+          weekDates={weekDates}
+          existingEntries={initialEntries}
+          mode={formState.mode}
+          initialValues={formState.initialValues}
+          pending={pending}
+          onSubmit={handleSubmit}
+          onCancel={resetForm}
+        />
+        {error && <p className="text-base font-medium text-brand-red">{error}</p>}
+      </div>
 
-      <TimeEntryList
-        entries={initialEntries}
-        projects={projects}
-        weekDates={weekDates}
-        onEdit={handleEdit}
-        onDuplicate={handleDuplicate}
-        onDelete={handleDelete}
-        deletingId={deletingId}
-      />
+      <div className="flex min-w-0 flex-col gap-6 rounded-md border border-brand-rose/40 p-4">
+        <TimeEntryList
+          entries={initialEntries}
+          projects={projects}
+          weekDates={shownWeekDates}
+          allWeekDates={weekDates}
+          onEdit={handleEdit}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+          deletingId={deletingId}
+          duplicatingId={duplicatingId}
+        />
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-bold text-brand-gray">Summary</h2>
-        <AggregateGridView entries={initialEntries} projects={projects} weekDates={weekDates} />
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-bold text-brand-gray">Summary</h2>
+          <AggregateGridView entries={initialEntries} projects={projects} weekDates={shownWeekDates} />
+        </div>
       </div>
     </div>
   );

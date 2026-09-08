@@ -6,7 +6,7 @@ import { PdfDownloadButton } from "@/components/timesheet/PdfDownloadButton";
 import { listActiveProjects } from "@/lib/db/queries/projects";
 import { getTimesheetById, getTimeEntriesForTimesheet } from "@/lib/db/queries/timesheets";
 import { getUserById } from "@/lib/db/queries/users";
-import { formatWeekRange, getWeekDates, parseDateISO } from "@/lib/utils/week";
+import { formatWeekRange, getWeekDates, parseDateISO, visibleWeekDates } from "@/lib/utils/week";
 import { weekSpansTwoMonths } from "@/lib/pdf/splitByMonth";
 
 export default async function AdminTimesheetDetailPage({
@@ -62,7 +62,10 @@ export default async function AdminTimesheetDetailPage({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-4">
-        <PdfDownloadButton timesheetId={timesheet.id} spansTwoMonths={weekSpansTwoMonths(weekDates)} />
+        <PdfDownloadButton
+          timesheetId={timesheet.id}
+          spansTwoMonths={weekSpansTwoMonths(visibleWeekDates(weekDates, entryRecords))}
+        />
         <a
           href={`/api/timesheets/${timesheet.id}/pdf/summary`}
           className="h-12 rounded-md border-2 border-brand-red px-6 py-3 text-lg font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white"
@@ -74,12 +77,6 @@ export default async function AdminTimesheetDetailPage({
           className="h-12 rounded-md border-2 border-brand-red px-6 py-3 text-lg font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white"
         >
           Download Excel
-        </a>
-        <a
-          href={`/api/timesheets/${timesheet.id}/csv`}
-          className="h-12 rounded-md border-2 border-brand-red px-6 py-3 text-lg font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white"
-        >
-          Download CSV
         </a>
       </div>
     </AppShell>

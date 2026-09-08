@@ -1,29 +1,121 @@
 "use client";
 
+import { useState } from "react";
 import { activityTypeLabel } from "@/lib/constants/activityTypes";
 import { computeTotals } from "@/lib/utils/totals";
 import { formatTimeRange } from "@/lib/utils/time";
+import type { WeekDate } from "@/lib/utils/week";
 import type { TimeEntryRecord } from "./TimeEntryForm";
 
 type Project = { id: string; name: string };
-type WeekDate = { date: string; label: string };
+
+function EntryCard({
+  entry,
+  projectName,
+  allWeekDates,
+  onEdit,
+  onDuplicate,
+  onDelete,
+  deleting,
+  duplicating,
+}: {
+  entry: TimeEntryRecord;
+  projectName: string;
+  allWeekDates: WeekDate[];
+  onEdit: (entry: TimeEntryRecord) => void;
+  onDuplicate: (entry: TimeEntryRecord, targetDate: string) => void;
+  onDelete: (entryId: string) => void;
+  deleting: boolean;
+  duplicating: boolean;
+}) {
+  const [duplicateDate, setDuplicateDate] = useState(entry.entryDate);
+
+  return (
+    <div className="flex flex-col gap-1 rounded-md border border-brand-rose/40 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-lg text-brand-gray">
+          <span className="font-semibold">
+            {entry.startTime && entry.endTime
+              ? formatTimeRange(entry.startTime, entry.endTime)
+              : "Imported, no time logged"}
+          </span>
+          {" · "}
+          {projectName}
+        </span>
+        <span className="text-base font-semibold text-brand-gray">{entry.hours.toFixed(2)} hrs</span>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-base text-brand-gray">
+          {activityTypeLabel(entry.activityType)}
+          {entry.notes ? ` · ${entry.notes}` : ""}
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={duplicateDate}
+            onChange={(e) => setDuplicateDate(e.target.value)}
+            aria-label="Day to duplicate this entry to"
+            className="h-9 rounded-md border border-brand-rose/50 px-2 text-sm text-brand-gray"
+          >
+            {allWeekDates.map((wd) => (
+              <option key={wd.date} value={wd.date}>
+                {wd.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={duplicating || !entry.startTime || !entry.endTime}
+            onClick={() => onDuplicate(entry, duplicateDate)}
+            title={
+              !entry.startTime || !entry.endTime
+                ? "This entry has no time-of-day to duplicate"
+                : undefined
+            }
+            className="h-9 rounded-md border-2 border-brand-gray px-3 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white disabled:opacity-60"
+          >
+            {duplicating ? "Duplicating..." : "Duplicate"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit(entry)}
+            className="h-9 rounded-md border-2 border-brand-gray px-3 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => onDelete(entry.id)}
+            className="h-9 rounded-md border-2 border-brand-red px-3 text-sm font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white disabled:opacity-60"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TimeEntryList({
   entries,
   projects,
   weekDates,
+  allWeekDates,
   onEdit,
   onDuplicate,
   onDelete,
   deletingId,
+  duplicatingId,
 }: {
   entries: TimeEntryRecord[];
   projects: Project[];
   weekDates: WeekDate[];
+  allWeekDates: WeekDate[];
   onEdit: (entry: TimeEntryRecord) => void;
-  onDuplicate: (entry: TimeEntryRecord) => void;
+  onDuplicate: (entry: TimeEntryRecord, targetDate: string) => void;
   onDelete: (entryId: string) => void;
   deletingId: string | null;
+  duplicatingId: string | null;
 }) {
   const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? "Unknown project";
   const totals = computeTotals(entries.map((e) => ({ ...e, entryDate: e.entryDate })));
@@ -48,55 +140,17 @@ export function TimeEntryList({
             ) : (
               <div className="flex flex-col gap-2">
                 {dayEntries.map((entry) => (
-                  <div
+                  <EntryCard
                     key={entry.id}
-                    className="flex flex-col gap-1 rounded-md border border-brand-rose/40 p-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-lg text-brand-gray">
-                        <span className="font-semibold">
-                          {entry.startTime && entry.endTime
-                            ? formatTimeRange(entry.startTime, entry.endTime)
-                            : "Imported, no time logged"}
-                        </span>
-                        {" · "}
-                        {projectName(entry.projectId)}
-                      </span>
-                      <span className="text-base font-semibold text-brand-gray">
-                        {entry.hours.toFixed(2)} hrs
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-base text-brand-gray">
-                        {activityTypeLabel(entry.activityType)}
-                        {entry.notes ? ` · ${entry.notes}` : ""}
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(entry)}
-                          className="h-9 rounded-md border-2 border-brand-gray px-3 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDuplicate(entry)}
-                          className="h-9 rounded-md border-2 border-brand-gray px-3 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white"
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          type="button"
-                          disabled={deletingId === entry.id}
-                          onClick={() => onDelete(entry.id)}
-                          className="h-9 rounded-md border-2 border-brand-red px-3 text-sm font-semibold text-brand-red hover:bg-brand-red hover:text-brand-white disabled:opacity-60"
-                        >
-                          {deletingId === entry.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    entry={entry}
+                    projectName={projectName(entry.projectId)}
+                    allWeekDates={allWeekDates}
+                    onEdit={onEdit}
+                    onDuplicate={onDuplicate}
+                    onDelete={onDelete}
+                    deleting={deletingId === entry.id}
+                    duplicating={duplicatingId === entry.id}
+                  />
                 ))}
               </div>
             )}

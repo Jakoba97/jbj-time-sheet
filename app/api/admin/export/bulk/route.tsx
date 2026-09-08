@@ -6,7 +6,6 @@ import { listTimesheetsForWeek } from "@/lib/db/queries/timesheets";
 import { buildTimesheetData } from "@/lib/pdf/buildTimesheetData";
 import { WeeklyTimesheetDocument } from "@/lib/pdf/WeeklyTimesheetDocument";
 import { exportWeeklyTimesheet } from "@/lib/excel/exportWeeklyTimesheet";
-import { buildActivityDetailCsv } from "@/lib/csv/buildActivityDetailCsv";
 import { buildExportFilename } from "@/lib/pdf/filename";
 
 export async function GET(req: Request) {
@@ -18,7 +17,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const weekStart = searchParams.get("weekStart");
   const kindParam = searchParams.get("kind");
-  const kind = kindParam === "excel" || kindParam === "csv" ? kindParam : "pdf";
+  const kind = kindParam === "excel" ? kindParam : "pdf";
   if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
     return new NextResponse("Missing or invalid weekStart", { status: 400 });
   }
@@ -35,9 +34,6 @@ export async function GET(req: Request) {
     if (kind === "excel") {
       const buffer = await exportWeeklyTimesheet(data);
       zip.file(buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "xlsx"), buffer);
-    } else if (kind === "csv") {
-      const csv = buildActivityDetailCsv(data);
-      zip.file(buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "csv"), csv);
     } else {
       const buffer = await renderToBuffer(<WeeklyTimesheetDocument data={data} />);
       zip.file(buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "pdf"), buffer);

@@ -1,7 +1,7 @@
 import { getTimesheetById, getTimeEntriesForTimesheet } from "@/lib/db/queries/timesheets";
 import { getUserById } from "@/lib/db/queries/users";
 import { listActiveProjects } from "@/lib/db/queries/projects";
-import { getWeekDates, parseDateISO } from "@/lib/utils/week";
+import { getWeekDates, parseDateISO, visibleWeekDates } from "@/lib/utils/week";
 import { computeTotals } from "@/lib/utils/totals";
 import type { PdfTimesheetData } from "@/lib/pdf/types";
 
@@ -43,7 +43,7 @@ export async function buildTimesheetData(timesheetId: string): Promise<PdfTimesh
     weekEndDate: timesheet.weekEndDate,
     checkDate: timesheet.checkDate,
     weeklyActivityNotes: timesheet.weeklyActivityNotes,
-    weekDates: getWeekDates(parseDateISO(timesheet.weekStartDate)),
+    weekDates: visibleWeekDates(getWeekDates(parseDateISO(timesheet.weekStartDate)), entries),
     projects: projects.map((p) => ({ id: p.id, name: p.name })),
     hours: totals.hours,
     activityEntries,

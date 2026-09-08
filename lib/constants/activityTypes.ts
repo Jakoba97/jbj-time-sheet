@@ -8,6 +8,12 @@ export const ACTIVITY_TYPES = [
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]["value"];
 
+// Buttons offered when logging a new entry. "meeting" and "administrative" stay out of this list
+// but remain in ACTIVITY_TYPES above so pre-existing entries using them still display correctly.
+export const SELECTABLE_ACTIVITY_TYPES = ACTIVITY_TYPES.filter(
+  (t) => t.value !== "meeting" && t.value !== "administrative",
+);
+
 export function activityTypeLabel(value: string | null): string {
   return ACTIVITY_TYPES.find((t) => t.value === value)?.label ?? "";
 }

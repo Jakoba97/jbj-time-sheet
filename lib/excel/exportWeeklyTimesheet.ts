@@ -67,12 +67,8 @@ export async function exportWeeklyTimesheet(data: PdfTimesheetData): Promise<Exc
   sheet.getCell(4, 1).font = { bold: true };
   sheet.getCell(4, 2).value = data.weekEndDate;
 
-  sheet.getCell(5, 1).value = "Check Date:";
-  sheet.getCell(5, 1).font = { bold: true };
-  sheet.getCell(5, 2).value = data.checkDate ?? "";
-
   // Grid header
-  const headerRowNum = 7;
+  const headerRowNum = 6;
   const headerRow = sheet.getRow(headerRowNum);
   headerRow.getCell(1).value = "Date";
   headerRow.getCell(2).value = "Day of Week";
