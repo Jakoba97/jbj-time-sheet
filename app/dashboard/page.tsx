@@ -6,8 +6,13 @@ import { WeekPicker } from "@/components/timesheet/WeekPicker";
 import { PdfDownloadButton } from "@/components/timesheet/PdfDownloadButton";
 import { AlertBadge } from "@/components/shared/AlertBadge";
 import { auth } from "@/lib/auth";
-import { listActiveProjects, getProjectByName } from "@/lib/db/queries/projects";
+import {
+  listActiveProjects,
+  listSpecialActivityProjects,
+  getProjectByName,
+} from "@/lib/db/queries/projects";
 import { getOrCreateWeeklyTimesheet, getTimeEntriesForTimesheet } from "@/lib/db/queries/timesheets";
+import { listTitlesForUser } from "@/lib/db/queries/employeeTitles";
 import { getHolidaysInRange } from "@/lib/db/queries/holidays";
 import {
   formatWeekRange,
@@ -26,17 +31,20 @@ export default async function DashboardPage() {
 
   const weekStartISO = formatDateISO(getWeekStart());
   const timesheet = await getOrCreateWeeklyTimesheet(userId, weekStartISO);
-  const [projects, entries, holidaysInWeek, holidayProject] = await Promise.all([
+  const [projects, specialProjects, entries, holidaysInWeek, holidayProject, titles] = await Promise.all([
     listActiveProjects(),
+    listSpecialActivityProjects(),
     getTimeEntriesForTimesheet(timesheet.id),
     getHolidaysInRange(timesheet.weekStartDate, timesheet.weekEndDate),
     getProjectByName("Holiday"),
+    listTitlesForUser(userId),
   ]);
 
   const weekDates = getWeekDates(getWeekStart());
   const entryRecords = entries.map((e) => ({
     id: e.id,
     projectId: e.projectId,
+    titleId: e.titleId,
     entryDate: e.entryDate,
     startTime: e.startTime,
     endTime: e.endTime,
@@ -67,6 +75,8 @@ export default async function DashboardPage() {
       <TimeEntryWorkspace
         timesheetId={timesheet.id}
         projects={projects}
+        specialProjects={specialProjects}
+        titles={titles}
         weekDates={weekDates}
         initialEntries={entryRecords}
       />

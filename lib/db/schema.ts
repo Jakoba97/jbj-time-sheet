@@ -20,6 +20,10 @@ export const roleEnum = pgEnum("role", ["admin", "employee"]);
 export const activityTypeEnum = pgEnum("activity_type", [
   "meeting",
   "project_work",
+  "pto",
+  "holiday",
+  "benevolence",
+  "sick_time",
   "administrative",
   "other",
 ]);
@@ -47,6 +51,22 @@ export const projects = pgTable("projects", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Titles an admin makes available to a specific employee to pick from when logging time
+// (distinct from users.title, which is that employee's own job title shown in employee lists/reports).
+export const employeeTitles = pgTable(
+  "employee_titles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 128 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.userId, t.title)],
+);
 
 export const weeklyTimesheets = pgTable(
   "weekly_timesheets",
@@ -77,6 +97,7 @@ export const timeEntries = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id),
+    titleId: uuid("title_id").references(() => employeeTitles.id, { onDelete: "set null" }),
     entryDate: date("entry_date").notNull(),
     startTime: varchar("start_time", { length: 5 }),
     endTime: varchar("end_time", { length: 5 }),

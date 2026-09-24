@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SELECTABLE_ACTIVITY_TYPES } from "@/lib/constants/activityTypes";
+import { SPECIAL_ACTIVITY_PROJECT_NAMES } from "@/lib/constants/specialActivityProjects";
 import { hoursBetween, isValidHHMM } from "@/lib/utils/time";
 import type { WeekDate } from "@/lib/utils/week";
 
 export type TimeEntryRecord = {
   id: string;
   projectId: string;
+  titleId: string | null;
   entryDate: string;
   startTime: string | null;
   endTime: string | null;
@@ -18,6 +20,7 @@ export type TimeEntryRecord = {
 
 export type TimeEntryFormValues = {
   projectId: string;
+  titleId: string;
   entryDate: string;
   startTime: string;
   endTime: string;
@@ -26,14 +29,19 @@ export type TimeEntryFormValues = {
 };
 
 type Project = { id: string; name: string };
+type Title = { id: string; title: string };
 
 const DEFAULT_START_TIME = "09:00";
 
-function mostUsedProjectId(entries: TimeEntryRecord[]): string {
-  if (entries.length === 0) return "";
+// Only considers "real work" entries so a week spent mostly on the Holiday/PTO placeholder
+// project (from the automated Holiday-prompt/PTO-approval flows) doesn't make that placeholder
+// the default project pre-selected for a brand new entry.
+function mostUsedProjectId(entries: TimeEntryRecord[], specialProjectIds: Set<string>): string {
+  const relevant = entries.filter((e) => !specialProjectIds.has(e.projectId));
+  if (relevant.length === 0) return "";
   const counts = new Map<string, number>();
-  for (const e of entries) counts.set(e.projectId, (counts.get(e.projectId) ?? 0) + 1);
-  let best = entries[0].projectId;
+  for (const e of relevant) counts.set(e.projectId, (counts.get(e.projectId) ?? 0) + 1);
+  let best = relevant[0].projectId;
   let bestCount = 0;
   for (const [id, count] of counts) {
     if (count > bestCount) {
@@ -46,6 +54,7 @@ function mostUsedProjectId(entries: TimeEntryRecord[]): string {
 
 export function TimeEntryForm({
   projects,
+  titles,
   weekDates,
   existingEntries,
   mode,
@@ -55,6 +64,7 @@ export function TimeEntryForm({
   onCancel,
 }: {
   projects: Project[];
+  titles: Title[];
   weekDates: WeekDate[];
   existingEntries: TimeEntryRecord[];
   mode: "create" | "edit";
@@ -63,18 +73,31 @@ export function TimeEntryForm({
   onSubmit: (values: TimeEntryFormValues) => void;
   onCancel: () => void;
 }) {
+  const regularProjects = useMemo(
+    () => projects.filter((p) => !SPECIAL_ACTIVITY_PROJECT_NAMES.includes(p.name)),
+    [projects],
+  );
+  const specialProjectIds = useMemo(
+    () =>
+      new Set(
+        projects.filter((p) => SPECIAL_ACTIVITY_PROJECT_NAMES.includes(p.name)).map((p) => p.id),
+      ),
+    [projects],
+  );
+
   const defaults = useMemo<TimeEntryFormValues>(() => {
     if (initialValues) return initialValues;
     const entryDate = weekDates[0]?.date ?? "";
     return {
-      projectId: mostUsedProjectId(existingEntries) || projects[0]?.id || "",
+      projectId: mostUsedProjectId(existingEntries, specialProjectIds) || regularProjects[0]?.id || "",
+      titleId: "",
       entryDate,
       startTime: DEFAULT_START_TIME,
       endTime: "",
       activityType: "project_work",
       notes: "",
     };
-  }, [initialValues, existingEntries, projects, weekDates]);
+  }, [initialValues, existingEntries, regularProjects, specialProjectIds, weekDates]);
 
   const [values, setValues] = useState<TimeEntryFormValues>(defaults);
   const [startTouched, setStartTouched] = useState(false);
@@ -152,13 +175,34 @@ export function TimeEntryForm({
           onChange={(e) => setValues((v) => ({ ...v, projectId: e.target.value }))}
           className="h-12 rounded-md border border-brand-rose/50 px-3 text-lg"
         >
-          {projects.map((p) => (
+          {regularProjects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
           ))}
         </select>
       </div>
+
+      {titles.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-base font-medium text-brand-gray" htmlFor="titleId">
+            Title
+          </label>
+          <select
+            id="titleId"
+            value={values.titleId}
+            onChange={(e) => setValues((v) => ({ ...v, titleId: e.target.value }))}
+            className="h-12 rounded-md border border-brand-rose/50 px-3 text-lg"
+          >
+            <option value="">No specific title</option>
+            {titles.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-4">
         <div className="flex flex-col gap-1">

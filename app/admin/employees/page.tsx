@@ -2,9 +2,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AddEmployeeForm } from "@/components/admin/AddEmployeeForm";
 import { EmployeeRow } from "@/components/admin/EmployeeRow";
 import { listUsers } from "@/lib/db/queries/users";
+import { listAllEmployeeTitles } from "@/lib/db/queries/employeeTitles";
 
 export default async function AdminEmployeesPage() {
-  const employees = await listUsers();
+  const [employees, allTitles] = await Promise.all([listUsers(), listAllEmployeeTitles()]);
 
   return (
     <AppShell>
@@ -22,6 +23,9 @@ export default async function AdminEmployeesPage() {
             username={u.username}
             role={u.role}
             active={u.active}
+            timeEntryTitles={allTitles
+              .filter((t) => t.userId === u.id)
+              .map((t) => ({ id: t.id, title: t.title }))}
           />
         ))}
       </div>

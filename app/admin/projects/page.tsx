@@ -2,9 +2,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AddProjectForm } from "@/components/admin/AddProjectForm";
 import { ProjectRow } from "@/components/admin/ProjectRow";
 import { listAllProjects } from "@/lib/db/queries/projects";
+import { SPECIAL_ACTIVITY_PROJECT_NAMES } from "@/lib/constants/specialActivityProjects";
 
 export default async function AdminProjectsPage() {
-  const projects = await listAllProjects();
+  const allProjects = await listAllProjects();
+  // PTO/Holiday/Benevolence/Sick Time are managed as "What kind of activity?" buttons on the Log
+  // Time form, not as projects an admin adds/deactivates here.
+  const projects = allProjects.filter((p) => !SPECIAL_ACTIVITY_PROJECT_NAMES.includes(p.name));
 
   return (
     <AppShell>

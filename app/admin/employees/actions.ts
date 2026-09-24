@@ -1,12 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db/client";
-import { users } from "@/lib/db/schema";
+import { employeeTitles, users } from "@/lib/db/schema";
 import { generateTempPassword } from "@/lib/utils/password";
 
 const createEmployeeSchema = z.object({
@@ -97,6 +97,45 @@ export async function updateEmployeeAction(
 export async function setEmployeeActiveAction(userId: string, active: boolean) {
   await requireAdmin();
   await db.update(users).set({ active }).where(eq(users.id, userId));
+  revalidatePath("/admin/employees");
+}
+
+const addEmployeeTitleSchema = z.object({
+  title: z.string().trim().min(1).max(128),
+});
+
+export async function addEmployeeTitleAction(
+  userId: string,
+  formData: FormData,
+): Promise<{ error: string | null }> {
+  await requireAdmin();
+
+  const parsed = addEmployeeTitleSchema.safeParse({ title: formData.get("title") });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+
+  const existing = await db.query.employeeTitles.findFirst({
+    where: and(eq(employeeTitles.userId, userId), eq(employeeTitles.title, parsed.data.title)),
+  });
+  if (existing) return { error: "That title is already added." };
+
+  const [{ maxOrder }] = await db
+    .select({ maxOrder: sql<number>`coalesce(max(${employeeTitles.sortOrder}), 0)` })
+    .from(employeeTitles)
+    .where(eq(employeeTitles.userId, userId));
+
+  await db.insert(employeeTitles).values({
+    userId,
+    title: parsed.data.title,
+    sortOrder: maxOrder + 1,
+  });
+
+  revalidatePath("/admin/employees");
+  return { error: null };
+}
+
+export async function removeEmployeeTitleAction(titleId: string) {
+  await requireAdmin();
+  await db.delete(employeeTitles).where(eq(employeeTitles.id, titleId));
   revalidatePath("/admin/employees");
 }
 

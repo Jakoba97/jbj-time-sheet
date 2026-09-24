@@ -36,7 +36,7 @@ export async function GET(req: Request) {
       }
 
       const buffer = await renderToBuffer(<WeeklyTimesheetDocument data={data} />);
-      const filename = buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "pdf");
+      const filename = buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "pdf");
       await uploadFileToFolder(folderId, filename, buffer, "application/pdf");
       results.push({ employeeName: data.employeeName, status: "uploaded" });
     } catch (err) {

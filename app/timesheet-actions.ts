@@ -8,12 +8,14 @@ import { db } from "@/lib/db/client";
 import { activityTypeEnum, timeEntries, weeklyTimesheets } from "@/lib/db/schema";
 import { getTimesheetById, getTimeEntryWithOwner } from "@/lib/db/queries/timesheets";
 import { getProjectByName } from "@/lib/db/queries/projects";
+import { getEmployeeTitleById } from "@/lib/db/queries/employeeTitles";
 import { hoursBetween } from "@/lib/utils/time";
 import { recordAudit } from "@/lib/audit/log";
 
 const timeEntrySchema = z.object({
   timesheetId: z.string().uuid(),
   projectId: z.string().uuid(),
+  titleId: z.string().uuid().optional(),
   entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
@@ -27,12 +29,27 @@ const timeEntrySchema = z.object({
 export type TimeEntryInput = {
   timesheetId: string;
   projectId: string;
+  titleId?: string;
   entryDate: string;
   startTime: string;
   endTime: string;
   activityType: string;
   notes?: string;
 };
+
+/** A titleId must belong to the timesheet's own owner — otherwise an employee could tag an
+ * entry with another employee's title via a crafted request. */
+async function resolveTitleId(
+  titleId: string | undefined,
+  timesheetOwnerId: string,
+): Promise<{ error: string | null; titleId: string | null }> {
+  if (!titleId) return { error: null, titleId: null };
+  const title = await getEmployeeTitleById(titleId);
+  if (!title || title.userId !== timesheetOwnerId) {
+    return { error: "Invalid title selection.", titleId: null };
+  }
+  return { error: null, titleId };
+}
 
 async function authorizeForTimesheet(timesheetId: string) {
   const session = await auth();
@@ -77,9 +94,13 @@ export async function createTimeEntryAction(
   const hours = hoursBetween(data.startTime, data.endTime);
   if (hours <= 0) return { error: "End time must be after start time." };
 
+  const titleResult = await resolveTitleId(data.titleId, timesheet.userId);
+  if (titleResult.error) return { error: titleResult.error };
+
   const newValues = {
     weeklyTimesheetId: data.timesheetId,
     projectId: data.projectId,
+    titleId: titleResult.titleId,
     entryDate: data.entryDate,
     startTime: data.startTime,
     endTime: data.endTime,
@@ -125,8 +146,12 @@ export async function updateTimeEntryAction(
   const hours = hoursBetween(data.startTime, data.endTime);
   if (hours <= 0) return { error: "End time must be after start time." };
 
+  const titleResult = await resolveTitleId(data.titleId, timesheet.userId);
+  if (titleResult.error) return { error: titleResult.error };
+
   const newValues = {
     projectId: data.projectId,
+    titleId: titleResult.titleId,
     entryDate: data.entryDate,
     startTime: data.startTime,
     endTime: data.endTime,
@@ -205,7 +230,7 @@ export async function addHolidayEntryAction(
     entryDate,
     startTime: STANDARD_WORKDAY.startTime,
     endTime: STANDARD_WORKDAY.endTime,
-    activityType: "administrative",
+    activityType: "holiday",
     hours: hours.toFixed(2),
   });
 

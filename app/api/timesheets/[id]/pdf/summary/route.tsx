@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Summary", data.weekStartDate, "pdf")}"`,
+      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Weekly_Summary", data.weekStartDate, "pdf")}"`,
     },
   });
 }

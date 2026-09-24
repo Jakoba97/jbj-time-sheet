@@ -3,9 +3,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { TimeEntryWorkspace } from "@/components/timesheet/TimeEntryWorkspace";
 import { WeeklyActivityNotes } from "@/components/timesheet/WeeklyActivityNotes";
 import { PdfDownloadButton } from "@/components/timesheet/PdfDownloadButton";
-import { listActiveProjects } from "@/lib/db/queries/projects";
+import { listActiveProjects, listSpecialActivityProjects } from "@/lib/db/queries/projects";
 import { getTimesheetById, getTimeEntriesForTimesheet } from "@/lib/db/queries/timesheets";
 import { getUserById } from "@/lib/db/queries/users";
+import { listTitlesForUser } from "@/lib/db/queries/employeeTitles";
 import { formatWeekRange, getWeekDates, parseDateISO, visibleWeekDates } from "@/lib/utils/week";
 import { weekSpansTwoMonths } from "@/lib/pdf/splitByMonth";
 
@@ -19,10 +20,12 @@ export default async function AdminTimesheetDetailPage({
   const timesheet = await getTimesheetById(id);
   if (!timesheet) notFound();
 
-  const [employee, projects, entries] = await Promise.all([
+  const [employee, projects, specialProjects, entries, titles] = await Promise.all([
     getUserById(timesheet.userId),
     listActiveProjects(),
+    listSpecialActivityProjects(),
     getTimeEntriesForTimesheet(id),
+    listTitlesForUser(timesheet.userId),
   ]);
   if (!employee) notFound();
 
@@ -30,6 +33,7 @@ export default async function AdminTimesheetDetailPage({
   const entryRecords = entries.map((e) => ({
     id: e.id,
     projectId: e.projectId,
+    titleId: e.titleId,
     entryDate: e.entryDate,
     startTime: e.startTime,
     endTime: e.endTime,
@@ -50,6 +54,8 @@ export default async function AdminTimesheetDetailPage({
       <TimeEntryWorkspace
         timesheetId={timesheet.id}
         projects={projects}
+        specialProjects={specialProjects}
+        titles={titles}
         weekDates={weekDates}
         initialEntries={entryRecords}
       />

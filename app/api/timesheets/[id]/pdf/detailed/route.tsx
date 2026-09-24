@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "pdf")}"`,
+        "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "pdf")}"`,
       },
     });
   }
@@ -44,14 +44,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const zip = new JSZip();
   for (const segment of splitTimesheetDataByMonth(data)) {
     const buffer = await renderToBuffer(<WeeklyTimesheetDocument data={segment} />);
-    zip.file(buildExportFilename(segment.employeeName, "Timesheet", segment.weekStartDate, "pdf"), buffer);
+    zip.file(buildExportFilename(segment.employeeName, "Weekly_Timesheet", segment.weekStartDate, "pdf"), buffer);
   }
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
   return new NextResponse(new Uint8Array(zipBuffer), {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Timesheet_Split", data.weekStartDate, "zip")}"`,
+      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Weekly_Timesheet_Split", data.weekStartDate, "zip")}"`,
     },
   });
 }

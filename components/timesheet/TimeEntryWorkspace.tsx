@@ -13,15 +13,20 @@ import {
 import { visibleWeekDates, type WeekDate } from "@/lib/utils/week";
 
 type Project = { id: string; name: string };
+type Title = { id: string; title: string };
 
 export function TimeEntryWorkspace({
   timesheetId,
   projects,
+  specialProjects,
+  titles,
   weekDates,
   initialEntries,
 }: {
   timesheetId: string;
   projects: Project[];
+  specialProjects: Project[];
+  titles: Title[];
   weekDates: WeekDate[];
   initialEntries: TimeEntryRecord[];
 }) {
@@ -50,6 +55,7 @@ export function TimeEntryWorkspace({
       editingId: entry.id,
       initialValues: {
         projectId: entry.projectId,
+        titleId: entry.titleId ?? "",
         entryDate: entry.entryDate,
         startTime: entry.startTime ?? "",
         endTime: entry.endTime ?? "",
@@ -70,6 +76,7 @@ export function TimeEntryWorkspace({
       const result = await createTimeEntryAction({
         timesheetId,
         projectId: entry.projectId,
+        titleId: entry.titleId ?? undefined,
         entryDate: targetDate,
         startTime: entry.startTime!,
         endTime: entry.endTime!,
@@ -87,11 +94,12 @@ export function TimeEntryWorkspace({
 
   function handleSubmit(values: TimeEntryFormValues) {
     setError(null);
+    const payload = { timesheetId, ...values, titleId: values.titleId || undefined };
     startTransition(async () => {
       const result =
         formState.mode === "edit" && formState.editingId
-          ? await updateTimeEntryAction(formState.editingId, { timesheetId, ...values })
-          : await createTimeEntryAction({ timesheetId, ...values });
+          ? await updateTimeEntryAction(formState.editingId, payload)
+          : await createTimeEntryAction(payload);
 
       if (result.error) {
         setError(result.error);
@@ -118,6 +126,11 @@ export function TimeEntryWorkspace({
   }
 
   const shownWeekDates = visibleWeekDates(weekDates, initialEntries);
+  // For display (name lookups, weekly summary totals): special-activity projects can be inactive
+  // and thus absent from `projects`, but past entries against them still need to render correctly.
+  const displayProjects = [...projects, ...specialProjects].filter(
+    (p, i, arr) => arr.findIndex((q) => q.id === p.id) === i,
+  );
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
@@ -125,6 +138,7 @@ export function TimeEntryWorkspace({
         <TimeEntryForm
           key={formKey}
           projects={projects}
+          titles={titles}
           weekDates={weekDates}
           existingEntries={initialEntries}
           mode={formState.mode}
@@ -139,7 +153,8 @@ export function TimeEntryWorkspace({
       <div className="flex min-w-0 flex-col gap-6 rounded-md border border-brand-rose/40 p-4">
         <TimeEntryList
           entries={initialEntries}
-          projects={projects}
+          projects={displayProjects}
+          titles={titles}
           weekDates={shownWeekDates}
           allWeekDates={weekDates}
           onEdit={handleEdit}
@@ -151,7 +166,7 @@ export function TimeEntryWorkspace({
 
         <div className="flex flex-col gap-2">
           <h2 className="text-xl font-bold text-brand-gray">Summary</h2>
-          <AggregateGridView entries={initialEntries} projects={projects} weekDates={shownWeekDates} />
+          <AggregateGridView entries={initialEntries} projects={displayProjects} weekDates={shownWeekDates} />
         </div>
       </div>
     </div>

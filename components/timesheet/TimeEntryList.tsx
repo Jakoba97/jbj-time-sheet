@@ -8,10 +8,12 @@ import type { WeekDate } from "@/lib/utils/week";
 import type { TimeEntryRecord } from "./TimeEntryForm";
 
 type Project = { id: string; name: string };
+type Title = { id: string; title: string };
 
 function EntryCard({
   entry,
   projectName,
+  titleName,
   allWeekDates,
   onEdit,
   onDuplicate,
@@ -21,6 +23,7 @@ function EntryCard({
 }: {
   entry: TimeEntryRecord;
   projectName: string;
+  titleName: string | null;
   allWeekDates: WeekDate[];
   onEdit: (entry: TimeEntryRecord) => void;
   onDuplicate: (entry: TimeEntryRecord, targetDate: string) => void;
@@ -47,6 +50,7 @@ function EntryCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-base text-brand-gray">
           {activityTypeLabel(entry.activityType)}
+          {titleName ? ` · ${titleName}` : ""}
           {entry.notes ? ` · ${entry.notes}` : ""}
         </span>
         <div className="flex flex-wrap items-center gap-2">
@@ -99,6 +103,7 @@ function EntryCard({
 export function TimeEntryList({
   entries,
   projects,
+  titles,
   weekDates,
   allWeekDates,
   onEdit,
@@ -109,6 +114,7 @@ export function TimeEntryList({
 }: {
   entries: TimeEntryRecord[];
   projects: Project[];
+  titles: Title[];
   weekDates: WeekDate[];
   allWeekDates: WeekDate[];
   onEdit: (entry: TimeEntryRecord) => void;
@@ -118,6 +124,7 @@ export function TimeEntryList({
   duplicatingId: string | null;
 }) {
   const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? "Unknown project";
+  const titleName = (id: string | null) => titles.find((t) => t.id === id)?.title ?? null;
   const totals = computeTotals(entries.map((e) => ({ ...e, entryDate: e.entryDate })));
 
   return (
@@ -144,6 +151,7 @@ export function TimeEntryList({
                     key={entry.id}
                     entry={entry}
                     projectName={projectName(entry.projectId)}
+                    titleName={titleName(entry.titleId)}
                     allWeekDates={allWeekDates}
                     onEdit={onEdit}
                     onDuplicate={onDuplicate}

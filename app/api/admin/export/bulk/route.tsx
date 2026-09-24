@@ -33,10 +33,10 @@ export async function GET(req: Request) {
     if (!data) continue;
     if (kind === "excel") {
       const buffer = await exportWeeklyTimesheet(data);
-      zip.file(buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "xlsx"), buffer);
+      zip.file(buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "xlsx"), buffer);
     } else {
       const buffer = await renderToBuffer(<WeeklyTimesheetDocument data={data} />);
-      zip.file(buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "pdf"), buffer);
+      zip.file(buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "pdf"), buffer);
     }
   }
 

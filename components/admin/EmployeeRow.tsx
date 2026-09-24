@@ -1,11 +1,89 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
+  addEmployeeTitleAction,
+  removeEmployeeTitleAction,
   resetPasswordAction,
   setEmployeeActiveAction,
   updateEmployeeAction,
 } from "@/app/admin/employees/actions";
+
+type TimeEntryTitle = { id: string; title: string };
+
+function TimeEntryTitles({
+  userId,
+  titles,
+}: {
+  userId: string;
+  titles: TimeEntryTitle[];
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    setError(null);
+    startTransition(async () => {
+      const result = await addEmployeeTitleAction(userId, formData);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      formRef.current?.reset();
+    });
+  }
+
+  function handleRemove(titleId: string) {
+    setError(null);
+    startTransition(() => removeEmployeeTitleAction(titleId));
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-brand-gray">Time Entry Titles:</span>
+        {titles.length === 0 && (
+          <span className="text-sm text-brand-gray/60">None yet</span>
+        )}
+        {titles.map((t) => (
+          <span
+            key={t.id}
+            className="flex items-center gap-1 rounded-full border border-brand-rose/50 px-2 py-0.5 text-sm text-brand-gray"
+          >
+            {t.title}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => handleRemove(t.id)}
+              aria-label={`Remove title ${t.title}`}
+              className="text-brand-red hover:text-brand-maroon disabled:opacity-60"
+            >
+              &times;
+            </button>
+          </span>
+        ))}
+        <form ref={formRef} onSubmit={handleAdd} className="flex items-center gap-1">
+          <input
+            name="title"
+            placeholder="Add a title"
+            className="h-8 w-36 rounded-md border border-brand-rose/50 px-2 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/30"
+          />
+          <button
+            type="submit"
+            disabled={pending}
+            className="h-8 rounded-md border-2 border-brand-gray px-2 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white disabled:opacity-60"
+          >
+            Add
+          </button>
+        </form>
+      </div>
+      {error && <p className="text-sm font-medium text-brand-red">{error}</p>}
+    </div>
+  );
+}
 
 export function EmployeeRow({
   id,
@@ -14,6 +92,7 @@ export function EmployeeRow({
   username,
   role,
   active,
+  timeEntryTitles,
 }: {
   id: string;
   fullName: string;
@@ -21,6 +100,7 @@ export function EmployeeRow({
   username: string;
   role: string;
   active: boolean;
+  timeEntryTitles: TimeEntryTitle[];
 }) {
   const [pending, startTransition] = useTransition();
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -174,6 +254,7 @@ export function EmployeeRow({
           </button>
         </div>
       </div>
+      <TimeEntryTitles userId={id} titles={timeEntryTitles} />
       {tempPassword && (
         <p className="rounded-md bg-brand-rose/20 p-2 text-base text-brand-gray">
           New temporary password: <span className="font-mono font-bold">{tempPassword}</span>

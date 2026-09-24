@@ -2,6 +2,10 @@
 export const ACTIVITY_TYPES = [
   { value: "meeting", label: "Meeting" },
   { value: "project_work", label: "Project Work" },
+  { value: "pto", label: "PTO" },
+  { value: "holiday", label: "Holiday" },
+  { value: "benevolence", label: "Benevolence" },
+  { value: "sick_time", label: "Sick Time" },
   { value: "administrative", label: "Administrative" },
   { value: "other", label: "Other" },
 ] as const;

@@ -26,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Timesheet", data.weekStartDate, "xlsx")}"`,
+      "Content-Disposition": `attachment; filename="${buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "xlsx")}"`,
     },
   });
 }

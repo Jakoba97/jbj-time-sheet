@@ -16,6 +16,11 @@ const PTO_PROJECT_NAME: Record<"pto" | "sick", string> = {
   sick: "Sick Time",
 };
 
+const PTO_ACTIVITY_TYPE: Record<"pto" | "sick", "pto" | "sick_time"> = {
+  pto: "pto",
+  sick: "sick_time",
+};
+
 const STANDARD_WORKDAY = { startTime: "09:00", endTime: "17:00" };
 
 export async function approvePtoRequestAction(
@@ -77,7 +82,7 @@ export async function approvePtoRequestAction(
             entryDate: dateISO,
             startTime: STANDARD_WORKDAY.startTime,
             endTime: STANDARD_WORKDAY.endTime,
-            activityType: "administrative",
+            activityType: PTO_ACTIVITY_TYPE[request.type],
             hours: hours.toFixed(2),
           });
         }

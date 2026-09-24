@@ -13,6 +13,7 @@ const styles = StyleSheet.create({
     borderColor: BRAND_COLORS.rose,
     padding: 8,
     minHeight: 50,
+    marginBottom: 12,
   },
   notesLabel: { fontSize: 9, fontWeight: 700, marginBottom: 4 },
   notesText: { fontSize: 10 },
