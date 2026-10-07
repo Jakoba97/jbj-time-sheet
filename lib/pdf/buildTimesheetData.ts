@@ -43,13 +43,17 @@ export async function buildTimesheetData(timesheetId: string): Promise<PdfTimesh
         a.entryDate.localeCompare(b.entryDate) || (a.startTime ?? "").localeCompare(b.startTime ?? ""),
     );
 
+  // Exports are a Mon-Fri week; Saturday/Sunday are added only when they have entries, and the
+  // printed week-ending date follows the last day shown (Friday unless the weekend was worked).
+  const weekDates = visibleWeekDates(getWeekDates(parseDateISO(timesheet.weekStartDate)), entries);
+
   return {
     employeeName: user.fullName,
     weekStartDate: timesheet.weekStartDate,
-    weekEndDate: timesheet.weekEndDate,
+    weekEndDate: weekDates[weekDates.length - 1]?.date ?? timesheet.weekEndDate,
     checkDate: timesheet.checkDate,
     weeklyActivityNotes: timesheet.weeklyActivityNotes,
-    weekDates: visibleWeekDates(getWeekDates(parseDateISO(timesheet.weekStartDate)), entries),
+    weekDates,
     projects: projects.map((p) => ({ id: p.id, name: p.name })),
     hours: totals.hours,
     activityEntries,

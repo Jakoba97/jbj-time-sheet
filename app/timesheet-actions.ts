@@ -10,6 +10,7 @@ import { getTimesheetById, getTimeEntryWithOwner } from "@/lib/db/queries/timesh
 import { getProjectByName } from "@/lib/db/queries/projects";
 import { getEmployeeTitleById } from "@/lib/db/queries/employeeTitles";
 import { hoursBetween } from "@/lib/utils/time";
+import { addDays, formatDateISO, parseDateISO } from "@/lib/utils/week";
 import { recordAudit } from "@/lib/audit/log";
 
 const timeEntrySchema = z.object({
@@ -69,6 +70,13 @@ async function authorizeForTimesheet(timesheetId: string) {
   return { error: null, timesheet, actorUserId: session.user.id };
 }
 
+// weekEndDate is stored as Friday (the standard Mon-Fri week), but Saturday/Sunday time is still
+// allowed, so entries are checked against the full Mon-Sun span.
+function isDateInTimesheetWeek(entryDate: string, timesheet: { weekStartDate: string }): boolean {
+  const sunday = formatDateISO(addDays(parseDateISO(timesheet.weekStartDate), 6));
+  return entryDate >= timesheet.weekStartDate && entryDate <= sunday;
+}
+
 function revalidateTimesheetPaths(timesheetId: string, weekStartDate: string) {
   revalidatePath("/dashboard");
   revalidatePath("/timesheets");
@@ -87,7 +95,7 @@ export async function createTimeEntryAction(
   const { error, timesheet, actorUserId } = await authorizeForTimesheet(data.timesheetId);
   if (error || !timesheet || !actorUserId) return { error };
 
-  if (data.entryDate < timesheet.weekStartDate || data.entryDate > timesheet.weekEndDate) {
+  if (!isDateInTimesheetWeek(data.entryDate, timesheet)) {
     return { error: "That date isn't in this week." };
   }
 
@@ -139,7 +147,7 @@ export async function updateTimeEntryAction(
     return { error: "Entry not found." };
   }
 
-  if (data.entryDate < timesheet.weekStartDate || data.entryDate > timesheet.weekEndDate) {
+  if (!isDateInTimesheetWeek(data.entryDate, timesheet)) {
     return { error: "That date isn't in this week." };
   }
 
@@ -206,7 +214,7 @@ export async function addHolidayEntryAction(
   const { error, timesheet } = await authorizeForTimesheet(timesheetId);
   if (error || !timesheet) return { error };
 
-  if (entryDate < timesheet.weekStartDate || entryDate > timesheet.weekEndDate) {
+  if (!isDateInTimesheetWeek(entryDate, timesheet)) {
     return { error: "That date isn't in this week." };
   }
 
