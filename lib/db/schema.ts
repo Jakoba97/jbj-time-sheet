@@ -85,8 +85,9 @@ export const weeklyTimesheets = pgTable(
   (t) => [unique().on(t.userId, t.weekStartDate)],
 );
 
-// startTime/endTime/activityType are non-null for every entry created through the app UI;
-// NULL indicates a row that came from a legacy Excel import (no time-of-day on paper).
+// activityType is non-null for every entry created through the app; NULL indicates a row that came
+// from a legacy Excel import. startTime/endTime are NULL for entries logged as a number of hours
+// (the current form) and for imports; older form entries and auto Holiday/PTO entries have them.
 export const timeEntries = pgTable(
   "time_entries",
   {

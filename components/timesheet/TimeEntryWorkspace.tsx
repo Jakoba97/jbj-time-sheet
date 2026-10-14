@@ -57,8 +57,7 @@ export function TimeEntryWorkspace({
         projectId: entry.projectId,
         titleId: entry.titleId ?? "",
         entryDate: entry.entryDate,
-        startTime: entry.startTime ?? "",
-        endTime: entry.endTime ?? "",
+        hours: String(entry.hours),
         activityType: entry.activityType ?? "project_work",
         notes: entry.notes ?? "",
       },
@@ -66,8 +65,9 @@ export function TimeEntryWorkspace({
   }
 
   function handleDuplicate(entry: TimeEntryRecord, targetDate: string) {
-    if (!entry.startTime || !entry.endTime) {
-      setError("This entry has no time-of-day to copy, so it can't be duplicated.");
+    const activityType = entry.activityType;
+    if (!activityType) {
+      setError("Imported entries can't be duplicated.");
       return;
     }
     setError(null);
@@ -78,9 +78,8 @@ export function TimeEntryWorkspace({
         projectId: entry.projectId,
         titleId: entry.titleId ?? undefined,
         entryDate: targetDate,
-        startTime: entry.startTime!,
-        endTime: entry.endTime!,
-        activityType: entry.activityType ?? "project_work",
+        hours: entry.hours,
+        activityType,
         notes: entry.notes ?? "",
       });
       setDuplicatingId(null);

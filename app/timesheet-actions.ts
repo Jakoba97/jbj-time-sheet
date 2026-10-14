@@ -18,8 +18,9 @@ const timeEntrySchema = z.object({
   projectId: z.string().uuid(),
   titleId: z.string().uuid().optional(),
   entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  // The form offers whole hours 1-12, but an edited or duplicated entry can carry over an older
+  // value (e.g. 7.5 from before the dropdown existed), so the server accepts any positive amount.
+  hours: z.coerce.number().positive("Pick how many hours.").max(24),
   activityType: z.enum(activityTypeEnum.enumValues),
   notes: z.string().max(2000).optional(),
 });
@@ -32,8 +33,7 @@ export type TimeEntryInput = {
   projectId: string;
   titleId?: string;
   entryDate: string;
-  startTime: string;
-  endTime: string;
+  hours: string | number;
   activityType: string;
   notes?: string;
 };
@@ -99,9 +99,6 @@ export async function createTimeEntryAction(
     return { error: "That date isn't in this week." };
   }
 
-  const hours = hoursBetween(data.startTime, data.endTime);
-  if (hours <= 0) return { error: "End time must be after start time." };
-
   const titleResult = await resolveTitleId(data.titleId, timesheet.userId);
   if (titleResult.error) return { error: titleResult.error };
 
@@ -110,11 +107,12 @@ export async function createTimeEntryAction(
     projectId: data.projectId,
     titleId: titleResult.titleId,
     entryDate: data.entryDate,
-    startTime: data.startTime,
-    endTime: data.endTime,
+    // Entries are logged as a number of hours, with no time of day.
+    startTime: null,
+    endTime: null,
     activityType: data.activityType,
     notes: data.notes || null,
-    hours: hours.toFixed(2),
+    hours: data.hours.toFixed(2),
   };
   const [created] = await db.insert(timeEntries).values(newValues).returning();
 
@@ -151,9 +149,6 @@ export async function updateTimeEntryAction(
     return { error: "That date isn't in this week." };
   }
 
-  const hours = hoursBetween(data.startTime, data.endTime);
-  if (hours <= 0) return { error: "End time must be after start time." };
-
   const titleResult = await resolveTitleId(data.titleId, timesheet.userId);
   if (titleResult.error) return { error: titleResult.error };
 
@@ -161,11 +156,12 @@ export async function updateTimeEntryAction(
     projectId: data.projectId,
     titleId: titleResult.titleId,
     entryDate: data.entryDate,
-    startTime: data.startTime,
-    endTime: data.endTime,
+    // Entries are logged as a number of hours, with no time of day.
+    startTime: null,
+    endTime: null,
     activityType: data.activityType,
     notes: data.notes || null,
-    hours: hours.toFixed(2),
+    hours: data.hours.toFixed(2),
   };
   await db.update(timeEntries).set(newValues).where(eq(timeEntries.id, entryId));
 

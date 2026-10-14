@@ -37,13 +37,12 @@ function EntryCard({
     <div className="flex flex-col gap-1 rounded-md border border-brand-rose/40 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-lg text-brand-gray">
-          <span className="font-semibold">
-            {entry.startTime && entry.endTime
-              ? formatTimeRange(entry.startTime, entry.endTime)
-              : "Imported, no time logged"}
-          </span>
-          {" · "}
-          {projectName}
+          <span className="font-semibold">{projectName}</span>
+          {entry.startTime && entry.endTime
+            ? ` · ${formatTimeRange(entry.startTime, entry.endTime)}`
+            : !entry.activityType
+              ? " · Imported"
+              : ""}
         </span>
         <span className="text-base font-semibold text-brand-gray">{entry.hours.toFixed(2)} hrs</span>
       </div>
@@ -68,13 +67,9 @@ function EntryCard({
           </select>
           <button
             type="button"
-            disabled={duplicating || !entry.startTime || !entry.endTime}
+            disabled={duplicating || !entry.activityType}
             onClick={() => onDuplicate(entry, duplicateDate)}
-            title={
-              !entry.startTime || !entry.endTime
-                ? "This entry has no time-of-day to duplicate"
-                : undefined
-            }
+            title={!entry.activityType ? "Imported entries can't be duplicated" : undefined}
             className="h-9 rounded-md border-2 border-brand-gray px-3 text-sm font-semibold text-brand-gray hover:bg-brand-gray hover:text-brand-white disabled:opacity-60"
           >
             {duplicating ? "Duplicating..." : "Duplicate"}

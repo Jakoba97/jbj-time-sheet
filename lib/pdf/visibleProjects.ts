@@ -9,11 +9,16 @@ const ALWAYS_VISIBLE_PROJECT_NAMES = new Set([
   "Sick Time",
 ]);
 
+// Client projects are listed first, then the always-visible categories, each group keeping the
+// incoming (alphabetical) order. Otherwise a category like "Benevolence" sorts above the actual
+// project the employee worked on.
 export function filterVisibleProjects<T extends { id: string; name: string }>(
   projects: T[],
   projectTotals: Record<string, number>,
 ): T[] {
-  return projects.filter(
-    (p) => ALWAYS_VISIBLE_PROJECT_NAMES.has(p.name) || (projectTotals[p.id] ?? 0) > 0,
+  const workedProjects = projects.filter(
+    (p) => !ALWAYS_VISIBLE_PROJECT_NAMES.has(p.name) && (projectTotals[p.id] ?? 0) > 0,
   );
+  const categories = projects.filter((p) => ALWAYS_VISIBLE_PROJECT_NAMES.has(p.name));
+  return [...workedProjects, ...categories];
 }

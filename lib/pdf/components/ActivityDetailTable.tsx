@@ -46,17 +46,17 @@ export function ActivityDetailTable({ data }: { data: PdfTimesheetData }) {
       <Text style={styles.heading}>Activity Detail</Text>
       <View style={styles.table}>
         <View style={styles.headerRow}>
+          <Text style={[styles.headerCell, styles.projectCol]}>Project</Text>
           <Text style={[styles.headerCell, styles.dateCol]}>Date</Text>
           <Text style={[styles.headerCell, styles.hoursCol]}>Hours</Text>
-          <Text style={[styles.headerCell, styles.projectCol]}>Project</Text>
           <Text style={[styles.headerCell, styles.typeCol]}>Type</Text>
           <Text style={[styles.headerCell, styles.notesCol]}>Notes</Text>
         </View>
         {data.activityEntries.map((entry, i) => (
           <View key={i} style={styles.row}>
+            <Text style={[styles.cell, styles.projectCol]}>{entry.projectName}</Text>
             <Text style={[styles.cell, styles.dateCol]}>{formatDateShort(entry.entryDate)}</Text>
             <Text style={[styles.cell, styles.hoursCol]}>{entry.hours.toFixed(2)}</Text>
-            <Text style={[styles.cell, styles.projectCol]}>{entry.projectName}</Text>
             <Text style={[styles.cell, styles.typeCol]}>{activityTypeLabel(entry.activityType)}</Text>
             <Text style={[styles.cell, styles.notesCol]}>{entry.notes ?? ""}</Text>
           </View>

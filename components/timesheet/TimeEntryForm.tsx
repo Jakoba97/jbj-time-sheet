@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SELECTABLE_ACTIVITY_TYPES } from "@/lib/constants/activityTypes";
 import { SPECIAL_ACTIVITY_PROJECT_NAMES } from "@/lib/constants/specialActivityProjects";
-import { hoursBetween, isValidHHMM } from "@/lib/utils/time";
 import type { WeekDate } from "@/lib/utils/week";
 
 export type TimeEntryRecord = {
@@ -22,8 +21,7 @@ export type TimeEntryFormValues = {
   projectId: string;
   titleId: string;
   entryDate: string;
-  startTime: string;
-  endTime: string;
+  hours: string;
   activityType: string;
   notes: string;
 };
@@ -31,7 +29,7 @@ export type TimeEntryFormValues = {
 type Project = { id: string; name: string };
 type Title = { id: string; title: string };
 
-const DEFAULT_START_TIME = "09:00";
+const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
 // Only considers "real work" entries so a week spent mostly on the Holiday/PTO placeholder
 // project (from the automated Holiday-prompt/PTO-approval flows) doesn't make that placeholder
@@ -92,44 +90,36 @@ export function TimeEntryForm({
       projectId: mostUsedProjectId(existingEntries, specialProjectIds) || regularProjects[0]?.id || "",
       titleId: "",
       entryDate,
-      startTime: DEFAULT_START_TIME,
-      endTime: "",
+      hours: "",
       activityType: "project_work",
       notes: "",
     };
   }, [initialValues, existingEntries, regularProjects, specialProjectIds, weekDates]);
 
   const [values, setValues] = useState<TimeEntryFormValues>(defaults);
-  const [startTouched, setStartTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setValues(defaults);
-    setStartTouched(false);
     setError(null);
   }, [defaults]);
 
   function selectDay(entryDate: string) {
-    setValues((v) => ({
-      ...v,
-      entryDate,
-      startTime: startTouched ? v.startTime : DEFAULT_START_TIME,
-    }));
+    setValues((v) => ({ ...v, entryDate }));
   }
 
-  const duration =
-    isValidHHMM(values.startTime) && isValidHHMM(values.endTime)
-      ? hoursBetween(values.startTime, values.endTime)
-      : 0;
+  // An entry saved before the dropdown existed (or a 9-5 Holiday/PTO entry) can have hours outside
+  // 1-12 or fractional hours; keep that value selectable so editing it doesn't silently change it.
+  const hourOptions =
+    values.hours && !HOUR_OPTIONS.includes(values.hours)
+      ? [...HOUR_OPTIONS, values.hours].sort((a, b) => Number(a) - Number(b))
+      : HOUR_OPTIONS;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!values.projectId) return setError("Pick a project.");
     if (!values.entryDate) return setError("Pick a day.");
-    if (!isValidHHMM(values.startTime) || !isValidHHMM(values.endTime)) {
-      return setError("Enter a start and end time.");
-    }
-    if (duration <= 0) return setError("End time must be after start time.");
+    if (!values.hours) return setError("Pick how many hours.");
     setError(null);
     onSubmit(values);
   }
@@ -204,41 +194,25 @@ export function TimeEntryForm({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-base font-medium text-brand-gray" htmlFor="startTime">
-            Start Time
-          </label>
-          <input
-            id="startTime"
-            type="time"
-            step={300}
-            value={values.startTime}
-            onChange={(e) => {
-              setStartTouched(true);
-              setValues((v) => ({ ...v, startTime: e.target.value }));
-            }}
-            className="h-12 rounded-md border border-brand-rose/50 px-3 text-lg"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-base font-medium text-brand-gray" htmlFor="endTime">
-            End Time
-          </label>
-          <input
-            id="endTime"
-            type="time"
-            step={300}
-            value={values.endTime}
-            onChange={(e) => setValues((v) => ({ ...v, endTime: e.target.value }))}
-            className="h-12 rounded-md border border-brand-rose/50 px-3 text-lg"
-          />
-        </div>
-        {duration > 0 && (
-          <div className="flex flex-col justify-end pb-3">
-            <span className="text-lg font-semibold text-brand-gray">{duration.toFixed(2)} hrs</span>
-          </div>
-        )}
+      <div className="flex flex-col gap-1">
+        <label className="text-base font-medium text-brand-gray" htmlFor="hours">
+          Hours
+        </label>
+        <select
+          id="hours"
+          value={values.hours}
+          onChange={(e) => setValues((v) => ({ ...v, hours: e.target.value }))}
+          className="h-12 w-40 rounded-md border border-brand-rose/50 px-3 text-lg"
+        >
+          <option value="" disabled>
+            Select...
+          </option>
+          {hourOptions.map((h) => (
+            <option key={h} value={h}>
+              {h} {h === "1" ? "hour" : "hours"}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -263,7 +237,7 @@ export function TimeEntryForm({
 
       <div className="flex flex-col gap-1">
         <label className="text-base font-medium text-brand-gray" htmlFor="notes">
-          Notes (optional): what did you work on?
+          Daily Activity
         </label>
         <textarea
           id="notes"

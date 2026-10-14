@@ -99,12 +99,12 @@ export async function commitImportAction(
   );
 
   await db.transaction(async (tx) => {
-    // Legacy-imported rows are the only ones with a null startTime (see schema comment) — clearing
+    // Legacy-imported rows are the only ones with a null activityType (see schema comment) — clearing
     // them first, scoped to this one timesheet, makes re-importing the same file idempotent without
     // touching any manually-entered entry.
     await tx
       .delete(timeEntries)
-      .where(and(eq(timeEntries.weeklyTimesheetId, timesheet.id), isNull(timeEntries.startTime)));
+      .where(and(eq(timeEntries.weeklyTimesheetId, timesheet.id), isNull(timeEntries.activityType)));
 
     if (newRows.length > 0) {
       await tx.insert(timeEntries).values(newRows);
