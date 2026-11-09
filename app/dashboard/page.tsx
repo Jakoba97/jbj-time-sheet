@@ -4,6 +4,7 @@ import { WeeklyActivityNotes } from "@/components/timesheet/WeeklyActivityNotes"
 import { HolidayPrompt } from "@/components/timesheet/HolidayPrompt";
 import { WeekPicker } from "@/components/timesheet/WeekPicker";
 import { PdfDownloadButton } from "@/components/timesheet/PdfDownloadButton";
+import { DriveExportButton } from "@/components/timesheet/DriveExportButton";
 import { AlertBadge } from "@/components/shared/AlertBadge";
 import { auth } from "@/lib/auth";
 import {
@@ -105,6 +106,7 @@ export default async function DashboardPage() {
         >
           Download Excel
         </a>
+        <DriveExportButton timesheetId={timesheet.id} />
       </div>
     </AppShell>
   );

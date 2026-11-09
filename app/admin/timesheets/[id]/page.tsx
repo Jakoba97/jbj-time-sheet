@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { TimeEntryWorkspace } from "@/components/timesheet/TimeEntryWorkspace";
 import { WeeklyActivityNotes } from "@/components/timesheet/WeeklyActivityNotes";
 import { PdfDownloadButton } from "@/components/timesheet/PdfDownloadButton";
+import { DriveExportButton } from "@/components/timesheet/DriveExportButton";
 import { listActiveProjects, listSpecialActivityProjects } from "@/lib/db/queries/projects";
 import { getTimesheetById, getTimeEntriesForTimesheet } from "@/lib/db/queries/timesheets";
 import { getUserById } from "@/lib/db/queries/users";
@@ -84,6 +85,7 @@ export default async function AdminTimesheetDetailPage({
         >
           Download Excel
         </a>
+        <DriveExportButton timesheetId={timesheet.id} />
       </div>
     </AppShell>
   );

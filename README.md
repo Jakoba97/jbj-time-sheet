@@ -132,6 +132,18 @@ Employee folder names must match the app's `fullName` for that employee
 exactly, or that employee's upload is skipped (visible in the cron's
 response body as `folder_not_found`, and in Vercel's logs for that run).
 
+## On-demand Drive export
+
+The **Export to Drive** button (`app/api/timesheets/[id]/drive/route.tsx`) uploads
+a timesheet's weekly PDF, summary PDF and Excel file into the same employee
+subfolder, replacing any files with the same names. It uses the setup above.
+Employees can export their own timesheets and admins can export anyone's; the
+file always goes to the timesheet owner's folder.
+
+If the employee folders use limited access, the service account may need to be
+added to each one directly, because access to the parent Timesheets folder may
+not carry down to them. Without access, the button reports the folder as not found.
+
 ## Deploying
 
 Pushes to `main` on GitHub auto-deploy via Vercel's GitHub integration. To
