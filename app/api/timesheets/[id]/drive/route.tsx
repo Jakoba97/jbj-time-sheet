@@ -4,13 +4,8 @@ import { auth } from "@/lib/auth";
 import { getTimesheetById } from "@/lib/db/queries/timesheets";
 import { buildTimesheetData } from "@/lib/pdf/buildTimesheetData";
 import { WeeklyTimesheetDocument } from "@/lib/pdf/WeeklyTimesheetDocument";
-import { WeeklySummaryDocument } from "@/lib/pdf/WeeklySummaryDocument";
-import { exportWeeklyTimesheet } from "@/lib/excel/exportWeeklyTimesheet";
 import { buildExportFilename } from "@/lib/pdf/filename";
 import { findFolderIdByName, uploadFileToFolder } from "@/lib/google/drive";
-
-const PDF_MIME_TYPE = "application/pdf";
-const EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,29 +51,11 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       );
     }
 
-    const files = [
-      {
-        filename: buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "pdf"),
-        buffer: await renderToBuffer(<WeeklyTimesheetDocument data={data} />),
-        mimeType: PDF_MIME_TYPE,
-      },
-      {
-        filename: buildExportFilename(data.employeeName, "Weekly_Summary", data.weekStartDate, "pdf"),
-        buffer: await renderToBuffer(<WeeklySummaryDocument data={data} />),
-        mimeType: PDF_MIME_TYPE,
-      },
-      {
-        filename: buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "xlsx"),
-        buffer: Buffer.from(await exportWeeklyTimesheet(data)),
-        mimeType: EXCEL_MIME_TYPE,
-      },
-    ];
+    const filename = buildExportFilename(data.employeeName, "Weekly_Timesheet", data.weekStartDate, "pdf");
+    const buffer = await renderToBuffer(<WeeklyTimesheetDocument data={data} />);
+    await uploadFileToFolder(folderId, filename, buffer, "application/pdf");
 
-    for (const file of files) {
-      await uploadFileToFolder(folderId, file.filename, file.buffer, file.mimeType);
-    }
-
-    return NextResponse.json({ folderName: data.employeeName, fileCount: files.length });
+    return NextResponse.json({ folderName: data.employeeName, filename });
   } catch (err) {
     console.error("Drive export failed for", data.employeeName, err);
     return NextResponse.json({ error: "Upload to Drive failed. Please try again." }, { status: 502 });

@@ -6,3 +6,12 @@
 // project names seeded in scripts/seed.ts and referenced by name in lib/pdf/visibleProjects.ts,
 // app/timesheet-actions.ts, and app/admin/pto/actions.ts.
 export const SPECIAL_ACTIVITY_PROJECT_NAMES = ["PTO", "Holiday", "Benevolence", "Sick Time"];
+
+// Exported timesheet grids show these activity types on their category row rather than on the
+// entry's own project, so a Holiday logged against a client project is counted as Holiday.
+export const SPECIAL_ACTIVITY_PROJECT_BY_TYPE: Record<string, string> = {
+  pto: "PTO",
+  holiday: "Holiday",
+  benevolence: "Benevolence",
+  sick_time: "Sick Time",
+};

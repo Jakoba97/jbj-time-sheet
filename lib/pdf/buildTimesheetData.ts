@@ -4,6 +4,7 @@ import { listActiveProjects, listSpecialActivityProjects } from "@/lib/db/querie
 import { getWeekDates, parseDateISO, visibleWeekDates } from "@/lib/utils/week";
 import { computeTotals } from "@/lib/utils/totals";
 import type { PdfTimesheetData } from "@/lib/pdf/types";
+import { SPECIAL_ACTIVITY_PROJECT_BY_TYPE } from "@/lib/constants/specialActivityProjects";
 
 export async function buildTimesheetData(timesheetId: string): Promise<PdfTimesheetData | null> {
   const timesheet = await getTimesheetById(timesheetId);
@@ -24,8 +25,16 @@ export async function buildTimesheetData(timesheetId: string): Promise<PdfTimesh
   );
   const projectNameById = new Map(projects.map((p) => [p.id, p.name]));
 
+  // PTO/Holiday/Benevolence/Sick Time entries keep a real project, but the grid counts them on
+  // their category row. The Activity Detail list below still shows the entry's own project.
+  const specialProjectIdByName = new Map(specialProjects.map((p) => [p.name, p.id]));
+  const gridProjectId = (e: (typeof entries)[number]) => {
+    const categoryName = e.activityType ? SPECIAL_ACTIVITY_PROJECT_BY_TYPE[e.activityType] : undefined;
+    return (categoryName && specialProjectIdByName.get(categoryName)) || e.projectId;
+  };
+
   const totals = computeTotals(
-    entries.map((e) => ({ projectId: e.projectId, entryDate: e.entryDate, hours: Number(e.hours) })),
+    entries.map((e) => ({ projectId: gridProjectId(e), entryDate: e.entryDate, hours: Number(e.hours) })),
   );
 
   const activityEntries = entries

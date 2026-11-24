@@ -135,8 +135,8 @@ response body as `folder_not_found`, and in Vercel's logs for that run).
 ## On-demand Drive export
 
 The **Export to Drive** button (`app/api/timesheets/[id]/drive/route.tsx`) uploads
-a timesheet's weekly PDF, summary PDF and Excel file into the same employee
-subfolder, replacing any files with the same names. It uses the setup above.
+a timesheet's weekly PDF into the same employee subfolder, replacing a file
+with the same name. It uses the setup above.
 Employees can export their own timesheets and admins can export anyone's; the
 file always goes to the timesheet owner's folder.
 

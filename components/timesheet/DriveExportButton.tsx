@@ -28,7 +28,7 @@ export function DriveExportButton({
       }
       setStatus({
         state: "success",
-        message: `Saved ${body.fileCount} files to ${body.folderName}'s Drive folder.`,
+        message: `Saved the timesheet PDF to ${body.folderName}'s Drive folder.`,
       });
     } catch {
       setStatus({ state: "error", message: "Upload to Drive failed. Please try again." });
