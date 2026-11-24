@@ -17,7 +17,9 @@ export function getDriveAuthClient(): JWT {
 
   cachedClient = new JWT({
     email,
-    key: rawKey.replace(/\\n/g, "\n"),
+    // Vercel keeps quotes pasted around a value, and the key may arrive with "\n" escapes or
+    // real newlines, so normalize both.
+    key: rawKey.trim().replace(/^(["'])([\s\S]*)\1$/, "$2").replace(/\\n/g, "\n"),
     scopes: [DRIVE_SCOPE],
   });
   return cachedClient;

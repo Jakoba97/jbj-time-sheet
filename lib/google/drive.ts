@@ -9,7 +9,7 @@ function escapeQueryValue(value: string): string {
 
 async function driveRequest<T>(
   url: string,
-  options?: { method?: "GET" | "POST" | "DELETE"; headers?: Record<string, string>; data?: Buffer },
+  options?: { method?: "GET" | "POST" | "PATCH"; headers?: Record<string, string>; data?: Buffer },
 ): Promise<T> {
   const client = getDriveAuthClient();
   const res = await client.request<T>({
@@ -69,13 +69,12 @@ async function findFileIdByName(parentFolderId: string, name: string): Promise<s
   return data.files[0]?.id ?? null;
 }
 
-async function deleteFile(fileId: string): Promise<void> {
-  await driveRequest(`${DRIVE_API}/files/${fileId}?supportsAllDrives=true`, { method: "DELETE" });
-}
-
 /**
  * Uploads `buffer` as `filename` into `parentFolderId`. If a file with the same name already
- * exists there (e.g. a re-run for the same week after a correction), it is replaced.
+ * exists there (e.g. a re-run for the same week after a correction), its contents are
+ * overwritten in place. Permanently deleting a Shared Drive file needs the Manager role, which
+ * the service account doesn't have; overwriting needs only edit access, and keeps the file's
+ * link and version history.
  */
 export async function uploadFileToFolder(
   parentFolderId: string,
@@ -84,12 +83,12 @@ export async function uploadFileToFolder(
   mimeType: string,
 ): Promise<string> {
   const existingFileId = await findFileIdByName(parentFolderId, filename);
-  if (existingFileId) {
-    await deleteFile(existingFileId);
-  }
 
   const boundary = `jbjtimesheet${Date.now()}`;
-  const metadata = JSON.stringify({ name: filename, parents: [parentFolderId] });
+  // An update can't set `parents`, so only a new file gets it.
+  const metadata = JSON.stringify(
+    existingFileId ? { name: filename } : { name: filename, parents: [parentFolderId] },
+  );
 
   const multipartBody = Buffer.concat([
     Buffer.from(
@@ -101,8 +100,11 @@ export async function uploadFileToFolder(
   ]);
 
   const params = new URLSearchParams({ uploadType: "multipart", supportsAllDrives: "true" });
-  const data = await driveRequest<{ id: string }>(`${DRIVE_UPLOAD_API}/files?${params.toString()}`, {
-    method: "POST",
+  const url = existingFileId
+    ? `${DRIVE_UPLOAD_API}/files/${existingFileId}?${params.toString()}`
+    : `${DRIVE_UPLOAD_API}/files?${params.toString()}`;
+  const data = await driveRequest<{ id: string }>(url, {
+    method: existingFileId ? "PATCH" : "POST",
     headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
     data: multipartBody,
   });
